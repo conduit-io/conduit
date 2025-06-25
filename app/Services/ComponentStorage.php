@@ -2,17 +2,17 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Collection;
+use App\Contracts\ComponentStorageInterface;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Database storage service for Conduit components and settings
- * 
+ *
  * Replaces runtime config file mutations with proper database storage.
  * Provides clean separation between static configuration and dynamic data.
  */
-class ComponentStorage
+class ComponentStorage implements ComponentStorageInterface
 {
     /**
      * Get all installed components
@@ -54,7 +54,7 @@ class ComponentStorage
     /**
      * Register a new component
      */
-    public function registerComponent(string $name, array $componentInfo, string $version = null): void
+    public function registerComponent(string $name, array $componentInfo, ?string $version = null): void
     {
         $data = [
             'name' => $name,
@@ -88,17 +88,17 @@ class ComponentStorage
     public function unregisterComponent(string $name): bool
     {
         $component = DB::table('components')->where('name', $name)->first();
-        
-        if (!$component) {
+
+        if (! $component) {
             return false;
         }
 
         // Remove service providers
         DB::table('service_providers')->where('component_name', $name)->delete();
-        
+
         // Remove component
         DB::table('components')->where('name', $name)->delete();
-        
+
         return true;
     }
 
@@ -108,8 +108,8 @@ class ComponentStorage
     public function getComponent(string $name): ?array
     {
         $component = DB::table('components')->where('name', $name)->first();
-        
-        if (!$component) {
+
+        if (! $component) {
             return null;
         }
 
@@ -187,8 +187,8 @@ class ComponentStorage
     public function getSetting(string $key, mixed $default = null): mixed
     {
         $setting = DB::table('settings')->where('key', $key)->first();
-        
-        if (!$setting) {
+
+        if (! $setting) {
             return $default;
         }
 

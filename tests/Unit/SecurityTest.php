@@ -10,7 +10,7 @@ class SecurityTest extends TestCase
 {
     public function test_package_name_validation_prevents_command_injection()
     {
-        $installer = new SecurePackageInstaller();
+        $installer = new SecurePackageInstaller;
         $reflection = new ReflectionClass($installer);
         $method = $reflection->getMethod('validatePackageName');
         $method->setAccessible(true);
@@ -33,7 +33,7 @@ class SecurityTest extends TestCase
 
     public function test_package_name_validation_accepts_valid_names()
     {
-        $installer = new SecurePackageInstaller();
+        $installer = new SecurePackageInstaller;
         $reflection = new ReflectionClass($installer);
         $method = $reflection->getMethod('validatePackageName');
         $method->setAccessible(true);
@@ -57,7 +57,7 @@ class SecurityTest extends TestCase
 
     public function test_package_name_validation_rejects_invalid_formats()
     {
-        $installer = new SecurePackageInstaller();
+        $installer = new SecurePackageInstaller;
         $reflection = new ReflectionClass($installer);
         $method = $reflection->getMethod('validatePackageName');
         $method->setAccessible(true);
@@ -82,12 +82,12 @@ class SecurityTest extends TestCase
 
     public function test_secure_process_execution_prevents_injection()
     {
-        $installer = new SecurePackageInstaller();
-        
+        $installer = new SecurePackageInstaller;
+
         // Test that the installer uses secure process execution
         // We can't easily test the actual process execution without side effects,
         // but we can verify the validation happens before execution
-        
+
         $this->expectException(\InvalidArgumentException::class);
         $installer->install(['full_name' => 'malicious; rm -rf /']);
     }
@@ -95,9 +95,9 @@ class SecurityTest extends TestCase
     public function test_service_layer_separation()
     {
         // Test that our services are properly separated
-        $installer = new SecurePackageInstaller();
+        $installer = new SecurePackageInstaller;
         $this->assertInstanceOf(SecurePackageInstaller::class, $installer);
-        
+
         // Verify key security methods exist
         $reflection = new ReflectionClass($installer);
         $this->assertTrue($reflection->hasMethod('validatePackageName'));

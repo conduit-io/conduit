@@ -2,20 +2,19 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use GuzzleHttp\Client;
+use App\Contracts\ComponentManagerInterface;
 use Carbon\Carbon;
+use GuzzleHttp\Client;
 
 /**
  * Service for managing Conduit components
- * 
+ *
  * Handles component discovery, installation, registration, and lifecycle management.
  * Components are external packages that extend Conduit through service providers.
- * 
+ *
  * Now uses database storage instead of config file mutations.
  */
-class ComponentManager
+class ComponentManager implements ComponentManagerInterface
 {
     public function __construct(
         private ComponentStorage $storage
@@ -27,8 +26,8 @@ class ComponentManager
     public function ensureStorageInitialized(): void
     {
         $this->configureDatabaseIfNeeded();
-        
-        if (!$this->storage->isDatabaseInitialized()) {
+
+        if (! $this->storage->isDatabaseInitialized()) {
             throw new \RuntimeException(
                 'Conduit database not initialized. Run: php conduit storage:init'
             );
@@ -41,7 +40,7 @@ class ComponentManager
     private function configureDatabaseIfNeeded(): void
     {
         $dbPath = $this->getDatabasePath();
-        
+
         if (file_exists($dbPath)) {
             config([
                 'database.default' => 'conduit_sqlite',
@@ -50,7 +49,7 @@ class ComponentManager
                     'database' => $dbPath,
                     'prefix' => '',
                     'foreign_key_constraints' => true,
-                ]
+                ],
             ]);
         }
     }
@@ -61,20 +60,22 @@ class ComponentManager
     private function getDatabasePath(): string
     {
         $homeDir = $_SERVER['HOME'] ?? $_SERVER['USERPROFILE'] ?? '';
-        $conduitDir = $homeDir . '/.conduit';
-        
-        return $conduitDir . '/conduit.sqlite';
+        $conduitDir = $homeDir.'/.conduit';
+
+        return $conduitDir.'/conduit.sqlite';
     }
 
     public function isInstalled(string $name): bool
     {
         $this->ensureStorageInitialized();
+
         return $this->storage->isInstalled($name);
     }
 
     public function getInstalled(): array
     {
         $this->ensureStorageInitialized();
+
         return $this->storage->getInstalled();
     }
 
@@ -84,13 +85,13 @@ class ComponentManager
         return config('components.registry', []);
     }
 
-    public function register(string $name, array $componentInfo, string $version = null): void
+    public function register(string $name, array $componentInfo, ?string $version = null): void
     {
         $this->ensureStorageInitialized();
-        
+
         $componentInfo['status'] = 'active';
         $componentInfo['installed_at'] = Carbon::now()->toISOString();
-        
+
         $this->storage->registerComponent($name, $componentInfo, $version);
     }
 
@@ -103,47 +104,48 @@ class ComponentManager
     public function discoverComponents(): array
     {
         $topic = config('components.discovery.github_topic', 'conduit-component');
-        
+
         try {
             $client = new Client([
                 'timeout' => 30,
                 'headers' => [
                     'User-Agent' => 'Conduit/1.0',
-                    'Accept' => 'application/vnd.github.v3+json'
-                ]
+                    'Accept' => 'application/vnd.github.v3+json',
+                ],
             ]);
-            
+
             $response = $client->get('https://api.github.com/search/repositories', [
                 'query' => [
                     'q' => "topic:{$topic}",
-                    'sort' => 'updated', 
+                    'sort' => 'updated',
                     'order' => 'desc',
-                    'per_page' => 50 // Limit results
-                ]
+                    'per_page' => 50, // Limit results
+                ],
             ]);
 
             if ($response->getStatusCode() !== 200) {
-                error_log("GitHub API Error: " . $response->getStatusCode() . " " . $response->getBody());
-                
+                error_log('GitHub API Error: '.$response->getStatusCode().' '.$response->getBody());
+
                 // Try fallback to local registry if configured
                 if (config('components.discovery.fallback_to_local', false)) {
                     return $this->getLocalRegistry();
                 }
-                
+
                 return [];
             }
 
             $data = json_decode($response->getBody()->getContents(), true);
-            
-            if (!isset($data['items'])) {
-                error_log("GitHub API: No items in response: " . json_encode($data));
+
+            if (! isset($data['items'])) {
+                error_log('GitHub API: No items in response: '.json_encode($data));
+
                 return config('components.discovery.fallback_to_local', false) ? $this->getLocalRegistry() : [];
             }
 
             $components = collect($data['items'])
                 ->filter(function ($repo) {
                     // Filter out archived or disabled repos
-                    return !($repo['archived'] ?? false) && !($repo['disabled'] ?? false);
+                    return ! ($repo['archived'] ?? false) && ! ($repo['disabled'] ?? false);
                 })
                 ->map(function ($repo) {
                     return [
@@ -161,22 +163,23 @@ class ComponentManager
                 ->toArray();
 
             // Log discovery success
-            error_log("Component discovery: Found " . count($components) . " components");
-            
+            error_log('Component discovery: Found '.count($components).' components');
+
             return $components;
-            
+
         } catch (\GuzzleHttp\Exception\RequestException $e) {
-            error_log("GitHub API Request failed: " . $e->getMessage());
-            
+            error_log('GitHub API Request failed: '.$e->getMessage());
+
             // Check if it's a rate limit issue
             if ($e->hasResponse() && $e->getResponse()->getStatusCode() === 403) {
-                error_log("GitHub API rate limit exceeded");
+                error_log('GitHub API rate limit exceeded');
             }
-            
+
             return config('components.discovery.fallback_to_local', false) ? $this->getLocalRegistry() : [];
-            
+
         } catch (\Exception $e) {
-            error_log("Component discovery error: " . $e->getMessage());
+            error_log('Component discovery error: '.$e->getMessage());
+
             return config('components.discovery.fallback_to_local', false) ? $this->getLocalRegistry() : [];
         }
     }
@@ -187,12 +190,12 @@ class ComponentManager
     private function getLocalRegistry(): array
     {
         $registry = config('components.registry', []);
-        
+
         return collect($registry)->map(function ($component, $name) {
             return array_merge($component, [
                 'name' => $name,
                 'full_name' => $component['package'] ?? $name,
-                'source' => 'local_registry'
+                'source' => 'local_registry',
             ]);
         })->values()->toArray();
     }
@@ -203,6 +206,7 @@ class ComponentManager
     public function getGlobalSetting(string $key, mixed $default = null): mixed
     {
         $this->ensureStorageInitialized();
+
         return $this->storage->getSetting($key, $default);
     }
 
@@ -221,6 +225,7 @@ class ComponentManager
     public function getGlobalSettings(): array
     {
         $this->ensureStorageInitialized();
+
         return $this->storage->getAllSettings();
     }
 
@@ -230,6 +235,7 @@ class ComponentManager
     public function getServiceProviders(): array
     {
         $this->ensureStorageInitialized();
+
         return $this->storage->getServiceProviders();
     }
 

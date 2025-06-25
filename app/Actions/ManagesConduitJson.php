@@ -2,8 +2,8 @@
 
 namespace App\Actions;
 
-use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\File;
 
 trait ManagesConduitJson
 {
@@ -23,23 +23,24 @@ trait ManagesConduitJson
     protected function loadConduitJson(): array
     {
         $this->initializeConduitJsonPath();
-        
-        if (!File::exists($this->conduitJsonPath)) {
+
+        if (! File::exists($this->conduitJsonPath)) {
             return $this->getDefaultConduitStructure();
         }
 
         try {
             $content = File::get($this->conduitJsonPath);
             $data = json_decode($content, true);
-            
+
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \RuntimeException('Invalid JSON in conduit.json: ' . json_last_error_msg());
+                throw new \RuntimeException('Invalid JSON in conduit.json: '.json_last_error_msg());
             }
-            
+
             // Ensure structure exists
             return array_merge($this->getDefaultConduitStructure(), $data);
         } catch (\Exception $e) {
-            error_log("Error loading conduit.json: " . $e->getMessage());
+            error_log('Error loading conduit.json: '.$e->getMessage());
+
             return $this->getDefaultConduitStructure();
         }
     }
@@ -50,23 +51,23 @@ trait ManagesConduitJson
     protected function saveConduitJson(array $data): void
     {
         $this->initializeConduitJsonPath();
-        
+
         try {
             $data['_meta'] = [
                 'schema_version' => '1.0',
                 'last_modified' => Carbon::now()->toISOString(),
                 'generated_by' => 'Conduit CLI',
             ];
-            
+
             $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-            
+
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \RuntimeException('Failed to encode JSON: ' . json_last_error_msg());
+                throw new \RuntimeException('Failed to encode JSON: '.json_last_error_msg());
             }
-            
+
             File::put($this->conduitJsonPath, $json);
         } catch (\Exception $e) {
-            throw new \RuntimeException("Failed to save conduit.json: " . $e->getMessage());
+            throw new \RuntimeException('Failed to save conduit.json: '.$e->getMessage());
         }
     }
 
@@ -96,14 +97,14 @@ trait ManagesConduitJson
     protected function backupConduitJson(): string
     {
         $this->initializeConduitJsonPath();
-        
-        if (!File::exists($this->conduitJsonPath)) {
+
+        if (! File::exists($this->conduitJsonPath)) {
             return '';
         }
 
-        $backupPath = $this->conduitJsonPath . '.backup.' . time();
+        $backupPath = $this->conduitJsonPath.'.backup.'.time();
         File::copy($this->conduitJsonPath, $backupPath);
-        
+
         return $backupPath;
     }
 
@@ -124,11 +125,11 @@ trait ManagesConduitJson
     protected function validateConduitJson(array $data): array
     {
         $errors = [];
-        
+
         // Check required sections
         $requiredSections = ['installed', 'discovery', 'settings'];
         foreach ($requiredSections as $section) {
-            if (!isset($data[$section])) {
+            if (! isset($data[$section])) {
                 $errors[] = "Missing required section: {$section}";
             }
         }
@@ -136,14 +137,15 @@ trait ManagesConduitJson
         // Validate installed components structure
         if (isset($data['installed']) && is_array($data['installed'])) {
             foreach ($data['installed'] as $name => $component) {
-                if (!is_array($component)) {
+                if (! is_array($component)) {
                     $errors[] = "Component '{$name}' must be an object";
+
                     continue;
                 }
-                
+
                 $requiredFields = ['package', 'status', 'installed_at'];
                 foreach ($requiredFields as $field) {
-                    if (!isset($component[$field])) {
+                    if (! isset($component[$field])) {
                         $errors[] = "Component '{$name}' missing required field: {$field}";
                     }
                 }
@@ -159,7 +161,7 @@ trait ManagesConduitJson
     protected function migrateFromConfig(): array
     {
         $configData = config('components', []);
-        
+
         if (empty($configData)) {
             return $this->getDefaultConduitStructure();
         }

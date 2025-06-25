@@ -63,7 +63,7 @@ return [
         Illuminate\Console\Scheduling\ScheduleFinishCommand::class,
         Illuminate\Foundation\Console\VendorPublishCommand::class,
         LaravelZero\Framework\Commands\StubPublishCommand::class,
-        
+
         // Laravel Zero development commands
         LaravelZero\Framework\Commands\BuildCommand::class,
         LaravelZero\Framework\Commands\RenameCommand::class,

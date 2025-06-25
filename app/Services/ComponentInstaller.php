@@ -2,16 +2,16 @@
 
 namespace App\Services;
 
-use App\Actions\InstallsComposerPackage;
-use App\Actions\DetectsServiceProviders;
 use App\Actions\DetectsCommands;
+use App\Actions\DetectsServiceProviders;
+use App\Actions\InstallsComposerPackage;
 use Carbon\Carbon;
 
 class ComponentInstaller
 {
-    use InstallsComposerPackage;
-    use DetectsServiceProviders;
     use DetectsCommands;
+    use DetectsServiceProviders;
+    use InstallsComposerPackage;
 
     /**
      * Install a component package
@@ -19,7 +19,7 @@ class ComponentInstaller
     public function install(array $component): array
     {
         $packageName = $component['full_name'];
-        
+
         // Step 1: Check if already installed
         if ($this->isPackageInstalled($packageName)) {
             throw new \RuntimeException("Package {$packageName} is already installed");
@@ -27,10 +27,10 @@ class ComponentInstaller
 
         // Step 2: Install via Composer
         $installResult = $this->installComposerPackage($packageName);
-        
-        if (!$installResult['success']) {
+
+        if (! $installResult['success']) {
             throw new \RuntimeException(
-                "Failed to install Composer package: " . $installResult['error']
+                'Failed to install Composer package: '.$installResult['error']
             );
         }
 
@@ -65,18 +65,18 @@ class ComponentInstaller
     public function uninstall(array $componentInfo): array
     {
         $packageName = $componentInfo['package'];
-        
+
         // Step 1: Check if package is installed
-        if (!$this->isPackageInstalled($packageName)) {
+        if (! $this->isPackageInstalled($packageName)) {
             throw new \RuntimeException("Package {$packageName} is not installed");
         }
 
         // Step 2: Remove via Composer
         $removeResult = $this->removeComposerPackage($packageName);
-        
-        if (!$removeResult['success']) {
+
+        if (! $removeResult['success']) {
             throw new \RuntimeException(
-                "Failed to remove Composer package: " . $removeResult['error']
+                'Failed to remove Composer package: '.$removeResult['error']
             );
         }
 
@@ -93,7 +93,7 @@ class ComponentInstaller
     public function validateComponent(array $component): array
     {
         $issues = [];
-        
+
         // Check required fields
         $requiredFields = ['name', 'full_name', 'description', 'url'];
         foreach ($requiredFields as $field) {
@@ -103,12 +103,12 @@ class ComponentInstaller
         }
 
         // Validate package name format
-        if (!empty($component['full_name']) && !preg_match('/^[a-z0-9\-]+\/[a-z0-9\-]+$/', $component['full_name'])) {
+        if (! empty($component['full_name']) && ! preg_match('/^[a-z0-9\-]+\/[a-z0-9\-]+$/', $component['full_name'])) {
             $issues[] = "Invalid package name format: {$component['full_name']}";
         }
 
         // Check if package exists on Packagist (optional validation)
-        if (!empty($component['full_name']) && !$this->packageExistsOnPackagist($component['full_name'])) {
+        if (! empty($component['full_name']) && ! $this->packageExistsOnPackagist($component['full_name'])) {
             $issues[] = "Package not found on Packagist: {$component['full_name']}";
         }
 
@@ -123,10 +123,11 @@ class ComponentInstaller
         try {
             $client = new \GuzzleHttp\Client(['timeout' => 10]);
             $response = $client->get("https://packagist.org/packages/{$packageName}.json");
-            
+
             return $response->getStatusCode() === 200;
         } catch (\Exception $e) {
-            error_log("Error checking Packagist for {$packageName}: " . $e->getMessage());
+            error_log("Error checking Packagist for {$packageName}: ".$e->getMessage());
+
             return true; // Assume exists if we can't check
         }
     }
@@ -138,7 +139,7 @@ class ComponentInstaller
     {
         $packageName = $component['full_name'];
         $isInstalled = $this->isPackageInstalled($packageName);
-        
+
         $status = [
             'installed' => $isInstalled,
             'package_name' => $packageName,

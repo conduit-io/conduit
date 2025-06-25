@@ -30,6 +30,6 @@ class ProcessResult
 
     public function hasError(): bool
     {
-        return !$this->successful;
+        return ! $this->successful;
     }
 }

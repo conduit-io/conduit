@@ -19,7 +19,7 @@ class ComponentInstallationResult
     {
         return new self(
             successful: true,
-            message: "Component installed successfully",
+            message: 'Component installed successfully',
             componentInfo: $componentInfo,
             commands: $commands
         );

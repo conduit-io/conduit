@@ -11,19 +11,20 @@ trait DetectsServiceProviders
     {
         try {
             $composerJsonPath = base_path("vendor/{$packageName}/composer.json");
-            
-            if (!file_exists($composerJsonPath)) {
+
+            if (! file_exists($composerJsonPath)) {
                 return [];
             }
-            
+
             $composerJson = json_decode(file_get_contents($composerJsonPath), true);
-            
+
             // Check Laravel extra.laravel.providers
             $providers = $composerJson['extra']['laravel']['providers'] ?? [];
-            
+
             return is_array($providers) ? $providers : [];
         } catch (\Exception $e) {
-            error_log("Error detecting service providers for {$packageName}: " . $e->getMessage());
+            error_log("Error detecting service providers for {$packageName}: ".$e->getMessage());
+
             return [];
         }
     }
@@ -35,19 +36,20 @@ trait DetectsServiceProviders
     {
         try {
             $composerJsonPath = base_path("vendor/{$packageName}/composer.json");
-            
-            if (!file_exists($composerJsonPath)) {
+
+            if (! file_exists($composerJsonPath)) {
                 return [];
             }
-            
+
             $composerJson = json_decode(file_get_contents($composerJsonPath), true);
-            
+
             // Check Laravel extra.laravel.aliases
             $aliases = $composerJson['extra']['laravel']['aliases'] ?? [];
-            
+
             return is_array($aliases) ? $aliases : [];
         } catch (\Exception $e) {
-            error_log("Error detecting aliases for {$packageName}: " . $e->getMessage());
+            error_log("Error detecting aliases for {$packageName}: ".$e->getMessage());
+
             return [];
         }
     }
@@ -59,19 +61,20 @@ trait DetectsServiceProviders
     {
         try {
             $composerJsonPath = base_path("vendor/{$packageName}/composer.json");
-            
-            if (!file_exists($composerJsonPath)) {
+
+            if (! file_exists($composerJsonPath)) {
                 return [];
             }
-            
+
             $composerJson = json_decode(file_get_contents($composerJsonPath), true);
-            
+
             // Check for Conduit-specific extensions
             $extensions = $composerJson['extra']['conduit'] ?? [];
-            
+
             return is_array($extensions) ? $extensions : [];
         } catch (\Exception $e) {
-            error_log("Error detecting Conduit extensions for {$packageName}: " . $e->getMessage());
+            error_log("Error detecting Conduit extensions for {$packageName}: ".$e->getMessage());
+
             return [];
         }
     }

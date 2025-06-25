@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Actions\ManagesConduitJson;
-use Illuminate\Support\Collection;
 use Carbon\Carbon;
 
 class ComponentPersistence
@@ -16,6 +15,7 @@ class ComponentPersistence
     public function getInstalled(): array
     {
         $data = $this->loadConduitJson();
+
         return $data['installed'] ?? [];
     }
 
@@ -25,6 +25,7 @@ class ComponentPersistence
     public function isInstalled(string $name): bool
     {
         $installed = $this->getInstalled();
+
         return isset($installed[$name]) && ($installed[$name]['status'] ?? '') === 'active';
     }
 
@@ -34,6 +35,7 @@ class ComponentPersistence
     public function getComponent(string $name): ?array
     {
         $installed = $this->getInstalled();
+
         return $installed[$name] ?? null;
     }
 
@@ -43,22 +45,22 @@ class ComponentPersistence
     public function register(string $name, array $componentInfo): void
     {
         $backupPath = $this->backupConduitJson();
-        
+
         try {
             $data = $this->loadConduitJson();
-            
+
             // Add component to installed list
             $data['installed'][$name] = array_merge($componentInfo, [
                 'status' => 'active',
                 'installed_at' => $componentInfo['installed_at'] ?? Carbon::now()->toISOString(),
             ]);
-            
+
             // Validate before saving
             $errors = $this->validateConduitJson($data);
-            if (!empty($errors)) {
-                throw new \RuntimeException('Validation failed: ' . implode(', ', $errors));
+            if (! empty($errors)) {
+                throw new \RuntimeException('Validation failed: '.implode(', ', $errors));
             }
-            
+
             $this->saveConduitJson($data);
         } catch (\Exception $e) {
             $this->restoreConduitJson($backupPath);
@@ -72,10 +74,10 @@ class ComponentPersistence
     public function unregister(string $name): void
     {
         $backupPath = $this->backupConduitJson();
-        
+
         try {
             $data = $this->loadConduitJson();
-            
+
             if (isset($data['installed'][$name])) {
                 unset($data['installed'][$name]);
                 $this->saveConduitJson($data);
@@ -92,10 +94,10 @@ class ComponentPersistence
     public function updateStatus(string $name, string $status): void
     {
         $backupPath = $this->backupConduitJson();
-        
+
         try {
             $data = $this->loadConduitJson();
-            
+
             if (isset($data['installed'][$name])) {
                 $data['installed'][$name]['status'] = $status;
                 $data['installed'][$name]['updated_at'] = Carbon::now()->toISOString();
@@ -113,6 +115,7 @@ class ComponentPersistence
     public function getDiscoverySettings(): array
     {
         $data = $this->loadConduitJson();
+
         return $data['discovery'] ?? [];
     }
 
@@ -122,7 +125,7 @@ class ComponentPersistence
     public function updateDiscoverySettings(array $settings): void
     {
         $backupPath = $this->backupConduitJson();
-        
+
         try {
             $data = $this->loadConduitJson();
             $data['discovery'] = array_merge($data['discovery'] ?? [], $settings);
@@ -139,6 +142,7 @@ class ComponentPersistence
     public function getSettings(): array
     {
         $data = $this->loadConduitJson();
+
         return $data['settings'] ?? [];
     }
 
@@ -148,6 +152,7 @@ class ComponentPersistence
     public function getSetting(string $key, $default = null)
     {
         $settings = $this->getSettings();
+
         return $settings[$key] ?? $default;
     }
 
@@ -157,7 +162,7 @@ class ComponentPersistence
     public function updateSettings(array $settings): void
     {
         $backupPath = $this->backupConduitJson();
-        
+
         try {
             $data = $this->loadConduitJson();
             $data['settings'] = array_merge($data['settings'] ?? [], $settings);
@@ -174,6 +179,7 @@ class ComponentPersistence
     public function getRegistry(): array
     {
         $data = $this->loadConduitJson();
+
         return $data['registry'] ?? [];
     }
 
@@ -183,7 +189,7 @@ class ComponentPersistence
     public function updateRegistry(array $registry): void
     {
         $backupPath = $this->backupConduitJson();
-        
+
         try {
             $data = $this->loadConduitJson();
             $data['registry'] = $registry;
@@ -208,13 +214,13 @@ class ComponentPersistence
     public function import(array $data): void
     {
         $backupPath = $this->backupConduitJson();
-        
+
         try {
             $errors = $this->validateConduitJson($data);
-            if (!empty($errors)) {
-                throw new \RuntimeException('Import validation failed: ' . implode(', ', $errors));
+            if (! empty($errors)) {
+                throw new \RuntimeException('Import validation failed: '.implode(', ', $errors));
             }
-            
+
             $this->saveConduitJson($data);
         } catch (\Exception $e) {
             $this->restoreConduitJson($backupPath);
@@ -227,7 +233,7 @@ class ComponentPersistence
      */
     public function initialize(): void
     {
-        if (!file_exists($this->conduitJsonPath)) {
+        if (! file_exists($this->conduitJsonPath)) {
             $this->saveConduitJson($this->getDefaultConduitStructure());
         }
     }
@@ -240,9 +246,11 @@ class ComponentPersistence
         try {
             $migratedData = $this->migrateFromConfig();
             $this->saveConduitJson($migratedData);
+
             return true;
         } catch (\Exception $e) {
-            error_log("Migration from config failed: " . $e->getMessage());
+            error_log('Migration from config failed: '.$e->getMessage());
+
             return false;
         }
     }

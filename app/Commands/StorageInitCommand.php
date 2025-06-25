@@ -33,16 +33,17 @@ class StorageInitCommand extends Command
 
         // Run migrations
         $this->info('📦 Running database migrations...');
-        
+
         try {
             Artisan::call('migrate', [
                 '--path' => 'database/migrations',
-                '--force' => true
+                '--force' => true,
             ]);
-            
+
             $this->info('✅ Database migrations completed successfully');
         } catch (\Exception $e) {
-            $this->error('❌ Migration failed: ' . $e->getMessage());
+            $this->error('❌ Migration failed: '.$e->getMessage());
+
             return self::FAILURE;
         }
 
@@ -53,16 +54,16 @@ class StorageInitCommand extends Command
 
         $this->newLine();
         $this->info('🎉 Conduit database storage initialized successfully!');
-        $this->info('📍 Database location: ' . $this->getDatabasePath());
-        
+        $this->info('📍 Database location: '.$this->getDatabasePath());
+
         return self::SUCCESS;
     }
 
     private function ensureDatabaseDirectory(): void
     {
         $dbDir = dirname($this->getDatabasePath());
-        
-        if (!File::exists($dbDir)) {
+
+        if (! File::exists($dbDir)) {
             File::makeDirectory($dbDir, 0755, true);
             $this->info("📁 Created database directory: {$dbDir}");
         }
@@ -71,7 +72,7 @@ class StorageInitCommand extends Command
     private function configureSqliteDatabase(): void
     {
         $dbPath = $this->getDatabasePath();
-        
+
         // Set Laravel database configuration for SQLite
         config([
             'database.default' => 'sqlite',
@@ -80,45 +81,45 @@ class StorageInitCommand extends Command
                 'database' => $dbPath,
                 'prefix' => '',
                 'foreign_key_constraints' => true,
-            ]
+            ],
         ]);
 
         // Reconnect with new configuration
         DB::purge('sqlite');
         DB::reconnect('sqlite');
-        
+
         $this->info("🔧 Configured SQLite database: {$dbPath}");
     }
 
     private function getDatabasePath(): string
     {
         $homeDir = $_SERVER['HOME'] ?? $_SERVER['USERPROFILE'] ?? '';
-        $conduitDir = $homeDir . '/.conduit';
-        
-        return $conduitDir . '/conduit.sqlite';
+        $conduitDir = $homeDir.'/.conduit';
+
+        return $conduitDir.'/conduit.sqlite';
     }
 
     private function migrateConfigData(): void
     {
         $this->info('🔄 Migrating existing config data...');
-        
+
         try {
             $migrated = $this->storage->migrateFromConfig();
-            
+
             if ($migrated['components'] > 0) {
                 $this->info("✅ Migrated {$migrated['components']} components");
             }
-            
+
             if ($migrated['settings'] > 0) {
                 $this->info("✅ Migrated {$migrated['settings']} settings");
             }
-            
+
             if ($migrated['components'] === 0 && $migrated['settings'] === 0) {
                 $this->info('ℹ️ No existing config data found to migrate');
             }
-            
+
         } catch (\Exception $e) {
-            $this->warn('⚠️ Config migration failed: ' . $e->getMessage());
+            $this->warn('⚠️ Config migration failed: '.$e->getMessage());
             $this->info('💡 You can continue without migration - new installs will use database storage');
         }
     }

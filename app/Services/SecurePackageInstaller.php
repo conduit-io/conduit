@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\PackageInstallerInterface;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Process;
 use InvalidArgumentException;
@@ -10,9 +11,10 @@ use RuntimeException;
 /**
  * Secure package installation service with comprehensive validation
  */
-class SecurePackageInstaller
+class SecurePackageInstaller implements PackageInstallerInterface
 {
     private Client $httpClient;
+
     private int $timeout;
 
     public function __construct()
@@ -28,7 +30,7 @@ class SecurePackageInstaller
     {
         $this->validatePackageName($component['full_name']);
         $this->verifyPackageEligibility($component);
-        
+
         return $this->executeComposerInstall($component['full_name']);
     }
 
@@ -38,16 +40,16 @@ class SecurePackageInstaller
     public function remove(string $packageName): ProcessResult
     {
         $this->validatePackageName($packageName);
-        
+
         $result = Process::timeout($this->timeout)
             ->path(base_path())
             ->run([
                 'composer',
                 'remove',
                 $packageName,
-                '--no-interaction'
+                '--no-interaction',
             ]);
-        
+
         return new ProcessResult(
             $result->successful(),
             $result->output(),
@@ -61,13 +63,13 @@ class SecurePackageInstaller
     private function validatePackageName(string $packageName): void
     {
         // Composer package naming conventions
-        if (!preg_match('/^[a-z0-9]([_.-]?[a-z0-9]+)*\/[a-z0-9]([_.-]?[a-z0-9]+)*$/', $packageName)) {
+        if (! preg_match('/^[a-z0-9]([_.-]?[a-z0-9]+)*\/[a-z0-9]([_.-]?[a-z0-9]+)*$/', $packageName)) {
             throw new InvalidArgumentException(
-                "Invalid package name format: {$packageName}. " .
-                "Must follow vendor/package naming convention."
+                "Invalid package name format: {$packageName}. ".
+                'Must follow vendor/package naming convention.'
             );
         }
-        
+
         if (strlen($packageName) > 100) {
             throw new InvalidArgumentException("Package name too long: {$packageName}");
         }
@@ -80,31 +82,31 @@ class SecurePackageInstaller
     {
         try {
             $response = $this->httpClient->get("https://packagist.org/packages/{$component['full_name']}.json");
-            
+
             if ($response->getStatusCode() !== 200) {
                 throw new RuntimeException("Package '{$component['full_name']}' not found on Packagist");
             }
-            
+
             $packageData = json_decode($response->getBody()->getContents(), true);
-            
+
             // Verify package has required topic
             $keywords = $packageData['package']['keywords'] ?? [];
             $requiredTopic = config('components.discovery.github_topic', 'conduit-component');
-            
-            if (!in_array($requiredTopic, $keywords)) {
+
+            if (! in_array($requiredTopic, $keywords)) {
                 throw new RuntimeException(
-                    "Package '{$component['full_name']}' does not have required topic '{$requiredTopic}'. " .
-                    "Only verified Conduit components can be installed."
+                    "Package '{$component['full_name']}' does not have required topic '{$requiredTopic}'. ".
+                    'Only verified Conduit components can be installed.'
                 );
             }
-            
+
         } catch (\GuzzleHttp\Exception\ClientException $e) {
             if ($e->getResponse()->getStatusCode() === 404) {
                 throw new RuntimeException("Package '{$component['full_name']}' not found on Packagist");
             }
-            throw new RuntimeException("Failed to verify package: " . $e->getMessage());
+            throw new RuntimeException('Failed to verify package: '.$e->getMessage());
         } catch (\Exception $e) {
-            throw new RuntimeException("Package verification failed: " . $e->getMessage());
+            throw new RuntimeException('Package verification failed: '.$e->getMessage());
         }
     }
 
@@ -121,9 +123,9 @@ class SecurePackageInstaller
                 $packageName,
                 '--no-interaction',
                 '--no-progress',
-                '--prefer-dist'
+                '--prefer-dist',
             ]);
-        
+
         return new ProcessResult(
             $result->successful(),
             $result->output(),

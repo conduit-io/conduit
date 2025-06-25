@@ -3,7 +3,6 @@
 namespace Tests\Unit;
 
 use App\Services\ComponentStorage;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -14,7 +13,7 @@ class ComponentStorageTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Configure in-memory SQLite for testing
         config([
             'database.default' => 'sqlite',
@@ -23,13 +22,13 @@ class ComponentStorageTest extends TestCase
                 'database' => ':memory:',
                 'prefix' => '',
                 'foreign_key_constraints' => true,
-            ]
+            ],
         ]);
 
         // Create tables manually for testing
         $this->createTables();
 
-        $this->storage = new ComponentStorage();
+        $this->storage = new ComponentStorage;
     }
 
     private function createTables(): void
@@ -175,12 +174,12 @@ class ComponentStorageTest extends TestCase
                     'package' => 'legacy/component',
                     'description' => 'Legacy component',
                     'version' => '0.9.0',
-                ]
+                ],
             ],
             'components.settings' => [
                 'interactive' => true,
                 'timeout' => 300,
-            ]
+            ],
         ]);
 
         // Run migration

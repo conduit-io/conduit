@@ -2,10 +2,6 @@
 
 namespace App\Services;
 
-use App\Services\SecurePackageInstaller;
-use App\Services\ComponentManager;
-use Carbon\Carbon;
-
 /**
  * High-level component installation orchestration service
  */
@@ -25,20 +21,20 @@ class ComponentInstallationService
         try {
             // Step 1: Secure package installation
             $installResult = $this->installer->install($component);
-            
-            if (!$installResult->isSuccessful()) {
+
+            if (! $installResult->isSuccessful()) {
                 return ComponentInstallationResult::failed(
-                    "Composer installation failed: " . $installResult->getErrorOutput(),
+                    'Composer installation failed: '.$installResult->getErrorOutput(),
                     $installResult
                 );
             }
 
             // Step 2: Detect service providers
             $serviceProviders = $this->detector->detectServiceProviders($component['full_name']);
-            
+
             // Step 3: Detect commands
             $commands = $this->detector->detectCommands($serviceProviders);
-            
+
             // Step 4: Register component
             $componentInfo = [
                 'package' => $component['full_name'],
@@ -50,11 +46,11 @@ class ComponentInstallationService
                 'url' => $component['url'],
                 'stars' => $component['stars'],
             ];
-            
+
             $this->manager->register($componentName, $componentInfo);
-            
+
             return ComponentInstallationResult::success($componentInfo, $commands);
-            
+
         } catch (\Exception $e) {
             return ComponentInstallationResult::failed($e->getMessage());
         }
@@ -67,6 +63,7 @@ class ComponentInstallationService
     {
         try {
             $this->manager->unregister($componentName);
+
             return true;
         } catch (\Exception $e) {
             return false;

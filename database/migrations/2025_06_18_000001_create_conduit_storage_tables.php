@@ -41,7 +41,7 @@ return new class extends Migration
             $table->string('component_name');
             $table->boolean('enabled')->default(true);
             $table->timestamps();
-            
+
             $table->foreign('component_name')->references('name')->on('components')->onDelete('cascade');
             $table->unique(['provider_class', 'component_name']);
         });
